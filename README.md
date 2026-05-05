@@ -1,4 +1,9 @@
 
+Ce package est en développement et non-fonctionnel.
+
+Le présent pojet est en développement et vise à transférer sur un git les codes utilisés 
+pour faire l'évaluation du stock de flétans de l'Atlantique des divisions opano 4RST.
+
 
 
 
