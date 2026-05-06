@@ -12,61 +12,60 @@
 #'
 #' Certains utilisateurs suggèrent d'installer les fichiers .txt localement pour accélérer le processus.
 #'
-#' @param dirInput chemin du répertoire à utiliser pour lire les données telles que produites par la DAISS.
-#' @param noEspece un code STRAP de l'espèce pour laquelle les informations sont recherchées (voir Details)
+#' @param no_espece un code STRAP de l'espèce pour laquelle les informations sont recherchées (voir Details)
+#' @param annees un vecteur des années à considérer
+#' @param dir_input chemin du répertoire à utiliser pour lire les données telles que produites par la DAISS.
 #'
 #' @importFrom  data.table fread
 #'
 #' @return
 #'
-lireZiff <- function(noEspece=130,
-                     annees=NULL,
-                     dirInput=file.path('//ent.dfo-mpo.ca','dfo-mpo','GROUP','QUE','Reg_Shares','DFO','science','DAISS','BD_Peches','Ziff','Version_totale')
-                     ){
+lireZiff <- function(
+  no_espece = 130,
+  annees = NULL,
+  dir_input = file.path(
+    '//ent.dfo-mpo.ca',
+    'dfo-mpo',
+    'GROUP',
+    'QUE',
+    'Reg_Shares',
+    'DFO',
+    'science',
+    'DAISS',
+    'BD_Peches',
+    'Ziff',
+    'Version_totale'
+  )
+) {
   ##
-  fichiers <- list.files(path=dirInput, pattern='^zif_version_totale_', ignore.case=TRUE)
-  if(all(is.na(fichiers))) stop('Aucun fichier nommé "zif_version_totale" dans le dossier.')
+  fichiers <- list.files(
+    path = dir_input,
+    pattern = '^zif_version_totale_'
+  )
+  if (all(is.na(fichiers))) {
+    stop('Aucun fichier nommé "zif_version_totale" dans le dossier.')
+  }
   fichiers.annees <- gsub(".*totale_([0-9]{4}).*", "\\1", fichiers)
   ##
   ## sélectionner les années
-  if(!is.null(annees)){
-    if(!is.numeric(annees)) stop("L'argument 'année' doit être un vecteur numérique.")
-    lesquels <- which(fichiers.annees %in% annees)
-  }else{
-    lesquels <- seq_along(fichiers)
+  if (!is.null(annees)) {
+    if (!is.numeric(annees)) {
+      stop("L'argument 'année' doit être un vecteur numérique.")
+    }
+    fichiers <- fichiers[fichiers.annees %in% annees]
+    fichiers.annees <- fichiers.annees[fichiers.annees %in% annees]
   }
-  fichiers <- fichiers[lesquels]
-  fichiers.annees <- fichiers.annees[lesquels]
   fichiers.preliminaires <- grepl("totale_[0-9]{4}PR", fichiers)
   ##
   ## indiquer s'il y a des fichiers péliminaires
-  if(any(fichiers.preliminaires)){
+  if (any(fichiers.preliminaires)) {
     annees_pr <- fichiers.annees[fichiers.preliminaires]
-    warning(paste0(
+    message(paste0(
+      ## warning(paste0(
       "ATTENTION : Les données pour ",
       paste(annees_pr, collapse = ", "),
       " sont PRÉLIMINAIRES (PR)"
     ))
   }
-
-
-}
-
-
-    ys <- sapply(fichiers, function(x){y <- gsub(".*totale_(.+).csv", "\\1", x)})
-    ys <- cbind(start = as.numeric(substring(ys, 1, 4)),
-                end   =  as.numeric(substring(ys, 5, 8)))
-    id <- apply(ys, 1, function(z) any(sapply(year, function(x) x %in% z[1]:z[2])))
-    files <- files[id]
-  }
-
-    files <- tibble(fichier = basename(files)) %>%
-      mutate(an = as.numeric(gsub("\\D", "", fichier))) %>%
-      filter(an %in% ans) %>%
-      pull(fichier)
-    files <- paste0(dirIN, files)
-  }
-
-
-
+  fichiers
 }
