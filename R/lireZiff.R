@@ -46,11 +46,17 @@ lireZiff <- function(
   dir_sauvegarde_locale = NULL
 ) {
   ##
-  if (!dir.exists(paths = dir_sauvegarde_locale)) {
-    dir_sauvegarde_locale <- NULL
+  if (is.null(dir_sauvegarde_locale)) {
     message(
-      "Le dossier de sauvegarde locale n'existe pas. Les fichiers lus ne seront pas conservés."
+      "Les fichiers lus ne seront pas conservés localement."
     )
+  } else {
+    if (!dir.exists(paths = dir_sauvegarde_locale)) {
+      dir_sauvegarde_locale <- NULL
+      message(
+        "Le dossier de sauvegarde locale n'existe pas. Les fichiers lus ne seront pas conservés localement."
+      )
+    }
   }
   ##
   ## sélectionner les fichiers
@@ -93,25 +99,29 @@ lireZiff <- function(
   ## ne relire que les fichiers qui nécessitent une mise à jour par rapport à leur version locale
   ziff.init <- list()
   for (i.an in seq_along(fichiers)) {
+    print(i.an)
     nom_local <- paste0(
       'ziff',
       fichiers.annees[i.an],
-      '_esp',
-      noEspece,
-      '.RData'
+      '_esp-',
+      paste(no_espece, collapse = "-")
     )
     ##
     ## vérifier l'existence d'un fichier local
-    besoin_update <- !file.exists(file.path(dir_sauvegarde_locale, nom_local))
+    besoin_update <- is.null(dir_sauvegarde_locale) ||
+      !file.exists(file.path(
+        dir_sauvegarde_locale,
+        paste0(nom_local, '.rds')
+      ))
     if (!besoin_update) {
       # si le fichier existe, comparer les dates pour savoir si mise à jour nécessaire
-      temps.fReseau <- file.info(file.path(dir_input, fichiers[i]))$mtime
+      temps.fReseau <- file.info(file.path(dir_input, fichiers[i.an]))$mtime
       temps.fLocal <- file.info(file.path(
         dir_sauvegarde_locale,
-        nom_local
+        paste0(nom_local, '.rds')
       ))$mtime
-      besoin_update <- is.na(temp.fReseau) ||
-        is.na(temp.fLocal) ||
+      besoin_update <- is.na(temps.fReseau) ||
+        is.na(temps.fLocal) ||
         (temps.fReseau > temps.fLocal)
     }
     ##
@@ -214,7 +224,11 @@ lireZiff <- function(
       ## continuer ici à polir les données
       ##
 
-      if (dir.exists(dir_sauvegarde_locale)) {
+      ## sauvegarde local si approprié
+      if (
+        !is.null(dir_sauvegarde_locale) &&
+          dir.exists(paths = dir_sauvegarde_locale)
+      ) {
         message(paste0(fichiers[i.an], ": mise à jour du cache local."))
         saveRDS(
           ziff.temp,
