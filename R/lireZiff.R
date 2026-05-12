@@ -20,14 +20,16 @@
 #' @param annees un vecteur des années à considérer.
 #' @param dir_input chemin du répertoire à utiliser pour lire les données telles que produites par la DAISS.
 #' @param dir_sauvegarde_locale chemin du répertoire de sauvegarde local, si désiré. Permet de réduire le temps de lecture en ne lisant que les fichiers nécessitant une mise à jour.
+#' @param ne_pas_mettre_a_jour_version_locale si TRUE, utiliser la version présente à `dir_sauvegarde_locale` sans mettre à jour les fichier. Utile pour reproduire des calculs antérieurs.
 #'
 #' @importFrom  data.table fread rbindlist
+#' @importFrom  readxl read_excel
 #' @import  lubridate
 #'
 #' @return
 #'
 lireZiff <- function(
-  no_espece = 130,
+  no_espece = NULL,
   no_espece_visee = NULL,
   annees = NULL,
   dir_input = file.path(
@@ -43,20 +45,14 @@ lireZiff <- function(
     'Ziff',
     'Version_totale'
   ),
-  dir_sauvegarde_locale = NULL
+  dir_sauvegarde_locale = NULL,
+  ne_pas_mettre_a_jour_version_locale = FALSE
 ) {
   ##
-  if (is.null(dir_sauvegarde_locale)) {
-    message(
-      "Les fichiers lus ne seront pas conservés localement."
+  if (is.null(no_espece) && is.null(no_espece_visee)) {
+    stop(
+      'Au moins une espèce capturée et/ou une espèce visée doit être indiquée.'
     )
-  } else {
-    if (!dir.exists(paths = dir_sauvegarde_locale)) {
-      dir_sauvegarde_locale <- NULL
-      message(
-        "Le dossier de sauvegarde locale n'existe pas. Les fichiers lus ne seront pas conservés localement."
-      )
-    }
   }
   ##
   ## sélectionner les fichiers
@@ -99,35 +95,58 @@ lireZiff <- function(
   ## ne relire que les fichiers qui nécessitent une mise à jour par rapport à leur version locale
   ziff.init <- list()
   for (i.an in seq_along(fichiers)) {
-    print(i.an)
     nom_local <- paste0(
       'ziff',
       fichiers.annees[i.an],
-      '_esp-',
-      paste(no_espece, collapse = "-")
+      '_espCapt-',
+      if (is.null(no_espece) || length(no_espece) == 0) {
+        "NA"
+      } else {
+        paste(no_espece, collapse = "-")
+      },
+      '_espVis-',
+      if (is.null(no_espece_visee) || length(no_espece_visee) == 0) {
+        "NA"
+      } else {
+        paste(no_espece_visee, collapse = "-")
+      }
     )
     ##
-    ## vérifier l'existence d'un fichier local
-    besoin_update <- is.null(dir_sauvegarde_locale) ||
-      !file.exists(file.path(
+    ##
+    ## déterminer si des versions locales existent et s'il y a besoin de mise à jour
+    exist_dossier_v_locale <- !is.null(dir_sauvegarde_locale) &&
+      dir.exists(paths = dir_sauvegarde_locale)
+    exist_fichier_v_locale <- exist_dossier_v_locale &&
+      file.exists(file.path(
         dir_sauvegarde_locale,
         paste0(nom_local, '.rds')
       ))
-    if (!besoin_update) {
-      # si le fichier existe, comparer les dates pour savoir si mise à jour nécessaire
-      temps.fReseau <- file.info(file.path(dir_input, fichiers[i.an]))$mtime
-      temps.fLocal <- file.info(file.path(
+    besoin_maj <- TRUE
+    if (!exist_fichier_v_locale) {
+      message(
+        paste("Il n'y a pas de version locale du fichier", fichiers[i.an])
+      )
+    } else {
+      temps.f_reseau <- file.info(file.path(dir_input, fichiers[i.an]))$mtime
+      temps.f_local <- file.info(file.path(
         dir_sauvegarde_locale,
         paste0(nom_local, '.rds')
       ))$mtime
-      besoin_update <- is.na(temps.fReseau) ||
-        is.na(temps.fLocal) ||
-        (temps.fReseau > temps.fLocal)
+      besoin_maj <- is.na(temps.f_reseau) ||
+        is.na(temps.f_local) ||
+        (temps.f_reseau > temps.f_local)
     }
     ##
+    ##
     ## lire le ficher local si approprié, sinon lire le fichier réseau, polir celui et possiblement l'enregistrer localement
-    if (!besoin_update) {
-      message(paste0(fichiers[i.an], ": lecture depuis le cache local."))
+    if (
+      (ne_pas_mettre_a_jour_version_locale && exist_fichier_v_locale) ||
+        !besoin_maj
+    ) {
+      message(paste0(
+        fichiers[i.an],
+        ": aucune mise à jour nécessaire, lecture depuis le cache local."
+      ))
       ziff.temp <- readRDS(file.path(
         dir_sauvegarde_locale,
         paste0(nom_local, '.rds')
@@ -138,8 +157,7 @@ lireZiff <- function(
         file = file.path(dir_input, fichiers[i.an]),
         sep = ';',
         header = TRUE,
-        stringsAsFactors = FALSE,
-        data.table = FALSE
+        stringsAsFactors = FALSE
       )
       ## sélectionner l'espèce
       condition1 <- if (is.null(no_espece)) {
@@ -220,14 +238,107 @@ lireZiff <- function(
       ziff.temp$opano <- trimws(toupper(ziff.temp$opano))
       ziff.temp$div <- trimws(toupper(ziff.temp$div))
 
-      ##
-      ## continuer ici à polir les données
-      ##
+      ## calcul des provinces d'attache
+      ## table(floor(ziff.temp$port_att/10000), useNA='always')
+      ziff.temp$prov_att <- c(
+        'Inconnu',
+        'N-É',
+        'N-B',
+        'IPE',
+        'QC',
+        'T-N',
+        rep(NA, 2)
+      )[floor(ziff.temp$port_att / 10000) + 1]
+      ## table(ziff.temp$annee, ziff.temp$prov_att, useNA='always')
+      ## table(floor(ziff.temp$port_deb/10000), useNA='always')
+      ziff.temp$prov_deb <- c(
+        'Inconnu',
+        'N-É',
+        'N-B',
+        'IPE',
+        'QC',
+        'T-N',
+        rep(NA, 2)
+      )[floor(ziff.temp$port_deb / 10000) + 1]
+      ## table(ziff.temp$prov_deb, useNA='always')
 
-      ## sauvegarde local si approprié
+      ## uniformiser mesure de quantité débarqué a Kilogramme (dans la forme débarquée)
+      ## table(ziff.temp$un_mes, useNA='always')
+      ziff.temp$pd_deb[ziff.temp$un_mes == 'P'] <- ziff.temp$pd_deb[
+        ziff.temp$un_mes == 'P'
+      ] *
+        0.453592
+      ziff.temp$pd_deb_kg[ziff.temp$un_mes %in% c('', 'U')] <- NA
+      ziff.temp$un_mes[ziff.temp$un_mes == 'P'] <- 'KfromP'
+      ## table(ziff.temp$un_mes, useNA='always')
+
+      ## ajouter les noms des espèces et engins en anglais, francais et latin
       if (
-        !is.null(dir_sauvegarde_locale) &&
-          dir.exists(paths = dir_sauvegarde_locale)
+        !exists(file.path(
+          dir_input,
+          'Documentation',
+          'Dictionnaire_ZIF_en_cours.xlsx'
+        ))
+      ) {
+        message(
+          "Le dictionnaires des noms d'espèces et d'engin n'est pas disponible."
+        )
+      } else {
+        ## Espèces débarquées
+        espece <- readxl::read_excel(
+          path = file.path(
+            dir_input,
+            'Documentation',
+            'Dictionnaire_ZIF_en_cours.xlsx'
+          ),
+          sheet = 'Espece',
+          col_names = TRUE
+        )
+        espece <- espece[, !(names(espece) %in% 'Remarques')]
+        names(espece) <- c("cod_esp", "cod_esp_en", "cod_esp_fr", "cod_esp_lat")
+        ziff.temp <- merge(ziff.temp, espece, by = "cod_esp", all.x = TRUE)
+
+        ## Espèces visées
+        names(espece) <- c(
+          "prespvis",
+          "prespvis_en",
+          "prespvis_fr",
+          "prespvis_lat"
+        )
+        ziff.temp <- merge(ziff.temp, espece, by = "prespvis", all.x = TRUE)
+
+        ## Espèces principales
+        names(espece) <- c(
+          "prespcap",
+          "prespcap_en",
+          "prespcap_fr",
+          "prespcap_lat"
+        )
+        ziff.temp <- merge(ziff.temp, espece, by = "prespcap", all.x = TRUE)
+        rm(espece)
+
+        ## Engins
+        engin <- readxl::read_excel(
+          path = file.path(
+            dir_input,
+            'Documentation',
+            'Dictionnaire_ZIF_en_cours.xlsx'
+          ),
+          sheet = 'Engins',
+          col_names = TRUE
+        )
+        engin <- engin[, 1:3]
+        names(engin) <- c("engin", "engin_fr", "engin_en")
+        ziff.temp <- merge(ziff.temp, engin, by = "engin", all.x = TRUE)
+        rm(engin)
+      }
+      ziff.temp$catEngin <- categorieEngin(ziff.temp$engin)
+
+      ## sauvegarde locale si approprié
+      if (
+        !ne_pas_mettre_a_jour_version_locale &&
+          exist_dossier_v_locale &&
+          besoin_maj
       ) {
         message(paste0(fichiers[i.an], ": mise à jour du cache local."))
         saveRDS(
@@ -240,5 +351,78 @@ lireZiff <- function(
     ziff.init[[i.an]] <- ziff.temp
   }
   ##
-  ziff <- data.table::rbindlist(ziff.init, fill = TRUE)
+  ziff <- as.data.frame(data.table::rbindlist(
+    ziff.init,
+    fill = TRUE
+  ))
+}
+
+
+#' Détermine une catégorie d'engin de pêche selon les numéros d'engins.
+#'
+#' @param x un vecteur de numéros d'engins à classifier en catégories
+#'
+#' @returns une table en trois colonnes des catégories d'engin, soit le nom du type d'engin, l'étiquette en francais et l'étiquette en anglais
+#' @export
+#'
+#' @examples
+categorieEngin <- function(x) {
+  ## x est un vecteur de caracteres à identifier comme type d'engin
+  ## table(x, useNA='ifany')
+  resultat <- array(
+    NA,
+    dim = c(length(x), 3),
+    dimnames = list(NULL, c('nom', 'etiquetteFR', 'etiquetteEN'))
+  )
+  for (i in seq_along(x)) {
+    if (x[i] %in% c(0, 7, 71, 99, 110)) {
+      resultat[i, ] <- c('autresInconnu', 'Indéterminé', 'Undetermined')
+    }
+    if (x[i] %in% c(11, 12, 15, 16, 19)) {
+      resultat[i, ] <- c('chaluts', 'Chaluts', 'Bottom trawl')
+    }
+    if (x[i] %in% c(21, 22)) {
+      resultat[i, ] <- c('seines', 'Seine', 'Seine')
+    }
+    if (x[i] %in% c(41)) {
+      resultat[i, ] <- c('filetsMaillants', 'Filet maillant', 'Gill net')
+    }
+    if (x[i] %in% c(50, 51)) {
+      resultat[i, ] <- c('palangres', 'Palangre', 'Longline')
+    }
+    if (x[i] %in% c(53, 55, 59)) {
+      resultat[i, ] <- c('enginsManuels', 'Engins manuels', 'Manual equipment')
+    }
+    if (x[i] %in% c(61, 62, 67)) {
+      resultat[i, ] <- c('trappes', 'Trappe', 'trap')
+    }
+    if (x[i] %in% c(71)) {
+      resultat[i, ] <- c('dragues', 'Drague', 'Dredge')
+    }
+    ##
+    if (x[i] %in% c('NK')) {
+      resultat[i, ] <- c('autresInconnu', 'Indéterminé', 'Undetermined')
+    }
+    if (x[i] %in% c('OTB1', 'OTB2', 'GRL1', 'GRL2', 'TT')) {
+      resultat[i, ] <- c('chaluts', 'Chaluts', 'Bottom trawl')
+    }
+    if (x[i] %in% c('SSC', 'SDN')) {
+      resultat[i, ] <- c('seines', 'Seine', 'Seine')
+    }
+    if (x[i] %in% c('GNS')) {
+      resultat[i, ] <- c('filetsMaillants', 'Filet maillant', 'Gill net')
+    }
+    if (x[i] %in% c('LLS', 'LL', 'LLD')) {
+      resultat[i, ] <- c('palangres', 'Palangre', 'Longline')
+    }
+    if (x[i] %in% c('LX', 'LHP')) {
+      resultat[i, ] <- c('enginsManuels', 'Engins manuels', 'Manual equipment')
+    }
+    if (x[i] %in% c('FPO')) {
+      resultat[i, ] <- c('trappes', 'Trappe', 'trap')
+    }
+    if (x[i] %in% c(71)) resultat[i, ] <- c('dragues', 'Drague', 'Dredge')
+  }
+  ##
+  resultat
 }
