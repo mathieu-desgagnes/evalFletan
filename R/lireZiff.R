@@ -341,6 +341,10 @@ lireZiff <- function(
           all.x = TRUE
         )
       }
+      ##
+      ## polissage général
+      ziff.init[ziff.init == 0] <- NA # all 0s are NA
+      ziff[] <- lapply(ziff, function(x) if (is.factor(x)) factor(x) else x) # drop unused factor levels
 
       ## sauvegarde locale si approprié
       if (
