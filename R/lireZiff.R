@@ -268,13 +268,12 @@ lireZiff <- function(
         ziff.temp$un_mes == 'P'
       ] *
         0.453592
-      ziff.temp$pd_deb_kg[ziff.temp$un_mes %in% c('', 'U')] <- NA
       ziff.temp$un_mes[ziff.temp$un_mes == 'P'] <- 'KfromP'
       ## table(ziff.temp$un_mes, useNA='always')
 
       ## ajouter les noms des espèces et engins en anglais, francais et latin
       if (
-        !exists(file.path(
+        !file.exists(file.path(
           dir_input,
           'Documentation',
           'Dictionnaire_ZIF_en_cours.xlsx'
@@ -332,7 +331,16 @@ lireZiff <- function(
         ziff.temp <- merge(ziff.temp, engin, by = "engin", all.x = TRUE)
         rm(engin)
       }
-      ziff.temp$catEngin <- categorieEngin(ziff.temp$engin)
+      ##
+      if (FALSE) {
+        #la fonction categorieEngin nécessite du travail
+        ziff.temp <- merge(
+          ziff.temp,
+          categorieEngin(),
+          by = "engin",
+          all.x = TRUE
+        )
+      }
 
       ## sauvegarde locale si approprié
       if (
@@ -360,69 +368,94 @@ lireZiff <- function(
 
 #' Détermine une catégorie d'engin de pêche selon les numéros d'engins.
 #'
-#' @param x un vecteur de numéros d'engins à classifier en catégories
-#'
-#' @returns une table en trois colonnes des catégories d'engin, soit le nom du type d'engin, l'étiquette en francais et l'étiquette en anglais
+#' @returns une table en 4 colonnes des catégories d'engin, soit le nom du type d'engin, l'étiquette en francais et l'étiquette en anglais
 #' @export
 #'
 #' @examples
-categorieEngin <- function(x) {
-  ## x est un vecteur de caracteres à identifier comme type d'engin
-  ## table(x, useNA='ifany')
-  resultat <- array(
-    NA,
-    dim = c(length(x), 3),
-    dimnames = list(NULL, c('nom', 'etiquetteFR', 'etiquetteEN'))
-  )
-  for (i in seq_along(x)) {
-    if (x[i] %in% c(0, 7, 71, 99, 110)) {
-      resultat[i, ] <- c('autresInconnu', 'Indéterminé', 'Undetermined')
-    }
-    if (x[i] %in% c(11, 12, 15, 16, 19)) {
-      resultat[i, ] <- c('chaluts', 'Chaluts', 'Bottom trawl')
-    }
-    if (x[i] %in% c(21, 22)) {
-      resultat[i, ] <- c('seines', 'Seine', 'Seine')
-    }
-    if (x[i] %in% c(41)) {
-      resultat[i, ] <- c('filetsMaillants', 'Filet maillant', 'Gill net')
-    }
-    if (x[i] %in% c(50, 51)) {
-      resultat[i, ] <- c('palangres', 'Palangre', 'Longline')
-    }
-    if (x[i] %in% c(53, 55, 59)) {
-      resultat[i, ] <- c('enginsManuels', 'Engins manuels', 'Manual equipment')
-    }
-    if (x[i] %in% c(61, 62, 67)) {
-      resultat[i, ] <- c('trappes', 'Trappe', 'trap')
-    }
-    if (x[i] %in% c(71)) {
-      resultat[i, ] <- c('dragues', 'Drague', 'Dredge')
-    }
-    ##
-    if (x[i] %in% c('NK')) {
-      resultat[i, ] <- c('autresInconnu', 'Indéterminé', 'Undetermined')
-    }
-    if (x[i] %in% c('OTB1', 'OTB2', 'GRL1', 'GRL2', 'TT')) {
-      resultat[i, ] <- c('chaluts', 'Chaluts', 'Bottom trawl')
-    }
-    if (x[i] %in% c('SSC', 'SDN')) {
-      resultat[i, ] <- c('seines', 'Seine', 'Seine')
-    }
-    if (x[i] %in% c('GNS')) {
-      resultat[i, ] <- c('filetsMaillants', 'Filet maillant', 'Gill net')
-    }
-    if (x[i] %in% c('LLS', 'LL', 'LLD')) {
-      resultat[i, ] <- c('palangres', 'Palangre', 'Longline')
-    }
-    if (x[i] %in% c('LX', 'LHP')) {
-      resultat[i, ] <- c('enginsManuels', 'Engins manuels', 'Manual equipment')
-    }
-    if (x[i] %in% c('FPO')) {
-      resultat[i, ] <- c('trappes', 'Trappe', 'trap')
-    }
-    if (x[i] %in% c(71)) resultat[i, ] <- c('dragues', 'Drague', 'Dredge')
-  }
+categorieEngin <- function(numeric = TRUE) {
   ##
-  resultat
+  if (numeric) {
+    resultat <- c(0, 'autresInconnu', 'Indéterminé', 'Undetermined')
+    names(resultat) <- c('temp', 'nom', 'etiquetteFR', 'etiquetteEN')
+    resultat <- rbind(
+      resultat,
+      c(7, 'autresInconnu', 'Indéterminé', 'Undetermined')
+    )
+    resultat <- rbind(
+      resultat,
+      c(71, 'autresInconnu', 'Indéterminé', 'Undetermined')
+    )
+    resultat <- rbind(
+      resultat,
+      c(99, 'autresInconnu', 'Indéterminé', 'Undetermined')
+    )
+    resultat <- rbind(
+      resultat,
+      c(110, 'autresInconnu', 'Indéterminé', 'Undetermined')
+    )
+    resultat <- rbind(resultat, c(11, 'chaluts', 'Chaluts', 'Bottom trawl'))
+    resultat <- rbind(resultat, c(12, 'chaluts', 'Chaluts', 'Bottom trawl'))
+    resultat <- rbind(resultat, c(15, 'chaluts', 'Chaluts', 'Bottom trawl'))
+    resultat <- rbind(resultat, c(16, 'chaluts', 'Chaluts', 'Bottom trawl'))
+    resultat <- rbind(resultat, c(19, 'chaluts', 'Chaluts', 'Bottom trawl'))
+    resultat <- rbind(resultat, c(21, 'seines', 'Seine', 'Seine'))
+    resultat <- rbind(resultat, c(22, 'seines', 'Seine', 'Seine'))
+    resultat <- rbind(
+      resultat,
+      c(41, 'filetsMaillants', 'Filet maillant', 'Gill net')
+    )
+    resultat <- rbind(resultat, c(50, 'palangres', 'Palangre', 'Longline'))
+    resultat <- rbind(resultat, c(51, 'palangres', 'Palangre', 'Longline'))
+    resultat <- rbind(
+      resultat,
+      c(53, 'enginsManuels', 'Engins manuels', 'Manual equipment')
+    )
+    resultat <- rbind(
+      resultat,
+      c(55, 'enginsManuels', 'Engins manuels', 'Manual equipment')
+    )
+    resultat <- rbind(
+      resultat,
+      c(59, 'enginsManuels', 'Engins manuels', 'Manual equipment')
+    )
+    resultat <- rbind(resultat, c(61, 'trappes', 'Trappe', 'trap'))
+    resultat <- rbind(resultat, c(62, 'trappes', 'Trappe', 'trap'))
+    resultat <- rbind(resultat, c(67, 'trappes', 'Trappe', 'trap'))
+    resultat <- rbind(resultat, c(71, 'dragues', 'Drague', 'Dredge'))
+    resultat$engin <- as.numeric(resultat[, 'temp'])
+  } else {
+    ##
+    resultat <- rbind(
+      resultat,
+      c('NK', 'autresInconnu', 'Indéterminé', 'Undetermined')
+    )
+    resultat <- rbind(
+      resultat,
+      c(7, 'autresInconnu', 'Indéterminé', 'Undetermined')
+    )
+    resultat <- rbind(resultat, c('OTB1', 'chaluts', 'Chaluts', 'Bottom trawl'))
+    resultat <- rbind(resultat, c('OTB2', 'chaluts', 'Chaluts', 'Bottom trawl'))
+    resultat <- rbind(resultat, c('GRL1', 'chaluts', 'Chaluts', 'Bottom trawl'))
+    resultat <- rbind(resultat, c('GRL2', 'chaluts', 'Chaluts', 'Bottom trawl'))
+    resultat <- rbind(resultat, c('TT', 'chaluts', 'Chaluts', 'Bottom trawl'))
+    resultat <- rbind(resultat, c('SSC', 'seines', 'Seine', 'Seine'))
+    resultat <- rbind(resultat, c('SDN', 'seines', 'Seine', 'Seine'))
+    resultat <- rbind(
+      resultat,
+      c('GNS', 'filetsMaillants', 'Filet maillant', 'Gill net')
+    )
+    resultat <- rbind(resultat, c('LLS', 'palangres', 'Palangre', 'Longline'))
+    resultat <- rbind(resultat, c('LL', 'palangres', 'Palangre', 'Longline'))
+    resultat <- rbind(resultat, c('LLD', 'palangres', 'Palangre', 'Longline'))
+    resultat <- rbind(
+      resultat,
+      c('LX', 'enginsManuels', 'Engins manuels', 'Manual equipment')
+    )
+    resultat <- rbind(
+      resultat,
+      c('LHP', 'enginsManuels', 'Engins manuels', 'Manual equipment')
+    )
+    resultat <- rbind(resultat, c('FPO', 'trappes', 'Trappe', 'trap'))
+  }
+  return(resultat)
 }
