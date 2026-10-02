@@ -13,14 +13,14 @@
 #' @export
 #'
 #' @examples
-valider_dernier_releve <- function() {
+valider_dernier_releve <- function(no_source = 35) {
   conn <- PSEtoDataframe::connect_to_db(
     "PSE",
     uid = Sys.getenv("NOM_USAGER_BD"),
     pwd = Sys.getenv("MOT_DE_PASSE_BD")
   )
   PSEtoDataframe::source_info_list()
-  no_source <- 38
+  # no_source <- 38
   no_releve_dernier <- max(PSEtoDataframe::no_releve_list(no_source)$NO_RELEVE)
   data <- PSEtoDataframe::pse_to_dataframe(
     source_info = no_source,
