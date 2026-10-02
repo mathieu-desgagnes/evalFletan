@@ -49,7 +49,7 @@ comparerOptionsEffort <- function(ziff) {
 
   pdf(file = file.path('dev', 'troisEfforts.pdf'), width = 14, height = 8.5)
   par(mfrow = c(2, 4))
-  for (i.an in sort(unique(zp.init$annee))) {
+  for (i.an in rev(sort(unique(zp.init$annee)))) {
     temp <- zp.init[zp.init$annee == i.an, ]
     for (i.reg in sort(unique(zp.init$region))) {
       temp2 <- temp[temp$region == i.reg, ]
@@ -65,7 +65,7 @@ comparerOptionsEffort <- function(ziff) {
 
   pdf(file = file.path('dev', 'troisEfforts_mer.pdf'), width = 14, height = 8.5)
   par(mfrow = c(2, 4))
-  for (i.an in sort(unique(zp.init$annee))) {
+  for (i.an in rev(sort(unique(zp.init$annee)))) {
     temp <- zp.init[zp.init$annee == i.an, ]
     for (i.reg in sort(unique(zp.init$region))) {
       temp2 <- temp[temp$region == i.reg, ]
@@ -85,7 +85,7 @@ comparerOptionsEffort <- function(ziff) {
     height = 8.5
   )
   par(mfrow = c(2, 4))
-  for (i.an in sort(unique(zp.init$annee))) {
+  for (i.an in rev(sort(unique(zp.init$annee)))) {
     temp <- zp.init[zp.init$annee == i.an, ]
     for (i.reg in sort(unique(zp.init$region))) {
       temp2 <- temp[temp$region == i.reg, ]
@@ -105,7 +105,7 @@ comparerOptionsEffort <- function(ziff) {
     height = 8.5
   )
   par(mfrow = c(2, 4))
-  for (i.an in sort(unique(zp.init$annee))) {
+  for (i.an in rev(sort(unique(zp.init$annee)))) {
     temp <- zp.init[zp.init$annee == i.an, ]
     for (i.reg in sort(unique(zp.init$region))) {
       temp2 <- temp[temp$region == i.reg, ]
@@ -118,6 +118,258 @@ comparerOptionsEffort <- function(ziff) {
     }
   }
   dev.off()
+
+  pdf(
+    file = file.path('dev', 'comparer_mer_mouil.pdf'),
+    width = 14,
+    height = 8.5
+  )
+  par(mfrow = c(2, 4))
+  for (i.an in rev(sort(unique(zp.init$annee)))) {
+    temp <- zp.init[zp.init$annee == i.an, ]
+    for (i.reg in sort(unique(zp.init$region))) {
+      temp2 <- temp[temp$region == i.reg, ]
+      plot(
+        temp2$jr_mer,
+        temp2$jr_mouil,
+        xlim = c(0, 10),
+        ylim = c(0, 10),
+        main = paste(i.an, i.reg, sep = ' : ')
+      )
+      abline(a = 0, b = 1)
+    }
+  }
+  dev.off()
+
+  pdf(
+    file = file.path('dev', 'comparer_peche_mouil.pdf'),
+    width = 17,
+    height = 8.5
+  )
+  par(mfrow = c(2, 4))
+  for (i.an in rev(sort(unique(zp.init$annee)))) {
+    temp <- zp.init[zp.init$annee == i.an, ]
+    for (i.reg in sort(unique(zp.init$region))) {
+      temp2 <- temp[temp$region == i.reg, ]
+      plot(
+        temp2$jr_peche,
+        temp2$jr_mouil,
+        xlim = c(0, 10),
+        ylim = c(0, 10),
+        main = paste(i.an, i.reg, sep = ' : ')
+      )
+      abline(a = 0, b = 1)
+    }
+  }
+  dev.off()
+
+  pdf(
+    file = file.path('dev', 'comparer_heure_peche.pdf'),
+    width = 16,
+    height = 8.5
+  )
+  par(mfrow = c(2, 4))
+  for (i.an in rev(sort(unique(zp.init$annee)))) {
+    temp <- zp.init[zp.init$annee == i.an, ]
+    for (i.reg in sort(unique(zp.init$region))) {
+      temp2 <- temp[temp$region == i.reg, ]
+      plot(
+        temp2$eff_hre,
+        temp2$jr_peche,
+        xlim = c(0, 200),
+        ylim = c(0, 10),
+        main = paste(i.an, i.reg, sep = ' : ')
+      )
+      abline(a = 0, b = 1 / 24)
+    }
+  }
+  dev.off()
+
+  pdf(
+    file = file.path('dev', 'comparer_heure_mouil.pdf'),
+    width = 16,
+    height = 8.5
+  )
+  par(mfrow = c(2, 4))
+  for (i.an in rev(sort(unique(zp.init$annee)))) {
+    temp <- zp.init[zp.init$annee == i.an, ]
+    for (i.reg in sort(unique(zp.init$region))) {
+      temp2 <- temp[temp$region == i.reg, ]
+      plot(
+        temp2$eff_hre,
+        temp2$jr_mouil,
+        xlim = c(0, 200),
+        ylim = c(0, 10),
+        main = paste(i.an, i.reg, sep = ' : ')
+      )
+      abline(a = 0, b = 1 / 24)
+    }
+  }
+  dev.off()
+
+  ##
+  ##étude sur les fractions de voyage
+  ##
+  par(mfrow = c(2, 2))
+  for (i.reg in sort(unique(zp.init$region))) {
+    temp <- zp.init[zp.init$region == i.reg, ]
+    nb_voy <- aggregate(x = temp$no_voy, by = temp['annee'], FUN = length)
+    plot(
+      nb_voy,
+      main = i.reg,
+      xlim = c(1985, 2025),
+      ylim = c(0, max(nb_voy[, 2]))
+    )
+    temp2 <- aggregate(
+      x = temp$pd_deb,
+      by = temp['annee'],
+      FUN = sum,
+      na.rm = TRUE
+    )
+    lines(temp2[, 1], temp2[, 2] / max(temp2[, 2]) * max(nb_voy[, 2]))
+  }
+
+  tail(
+    aggregate(
+      x = zp.init$frn_voy,
+      by = zp.init[c('no_voy', 'region', 'annee')],
+      FUN = sum,
+      na.rm = TRUE
+    ),
+    100
+  )
+  tail(
+    aggregate(
+      x = zp.init$frn_voy,
+      by = zp.init[c('nbpc', 'no_voy', 'region', 'annee')],
+      FUN = sum,
+      na.rm = TRUE
+    ),
+    100
+  )
+  subset(zp.init, nbpc == 108151 & no_voy == 44 & region == 'S' & annee == 2025)
+  ##observation1: frn_voy est le rapport par operation de pêche des débarquements issus de ce voyage. Operation de peche non clairement identifié.
+  ## dans l'exemple, lié au "cod_ach" et au "form_esp", où les poissons ronds sont '0' et poissons éviscérés sont '10114'
+  subset(zp.init, nbpc == 176558 & no_voy == 69 & region == 'Q' & annee == 2025)
+  ##observation2: frn_voy ne tient pas compte de 'tail_esp', qui sont finalement des sous-element d'un même operation
+  subset(zp.init, nbpc == 106623 & no_voy == 11 & region == 'S' & annee == 2025)
+  ##obs: ici, tail_esp et form_esp sont identiques, seul cod_ach est différent. Les jours en mer sont aussi séparés selon frn_voy, avec arrondissement
+  subset(zp.init, nbpc == 176269 & no_voy == 50 & region == 'Q' & annee == 2025)
+
+  temp1 <- rbind(
+    subset(
+      zp.init,
+      nbpc == 8377 & no_voy == 28 & region == 'Q' & annee == 2010
+    ),
+    subset(
+      zp.init,
+      nbpc == 176558 & no_voy == 69 & region == 'Q' & annee == 2025
+    ),
+    subset(
+      zp.init,
+      nbpc == 106623 & no_voy == 11 & region == 'S' & annee == 2025
+    )
+  )
+  write.csv(temp1, file = file.path('dev', 'exempleZiffIncertain.csv'))
+
+  par(mfrow = c(2, 2))
+  for (i.reg in sort(unique(zp.init$region))) {
+    temp <- zp.init[zp.init$region == i.reg, ]
+    duree_voy <- aggregate(
+      x = temp$jr_mer,
+      by = temp['annee'],
+      FUN = median,
+      na.rm = TRUE
+    )
+    plot(
+      duree_voy,
+      main = i.reg,
+      xlim = c(1985, 2025),
+      ylim = c(0, max(duree_voy[, 2]))
+    )
+    temp2 <- aggregate(
+      x = temp$pd_deb,
+      by = temp['annee'],
+      FUN = sum,
+      na.rm = TRUE
+    )
+    lines(temp2[, 1], temp2[, 2] / max(temp2[, 2]) * max(duree_voy[, 2]))
+  }
+
+  par(mfrow = c(2, 2))
+  for (i.reg in sort(unique(zp.init$region))) {
+    temp <- zp.init[zp.init$region == i.reg, ]
+    duree_peche <- aggregate(
+      x = temp$jr_peche,
+      by = temp['annee'],
+      FUN = median,
+      na.rm = TRUE
+    )
+    plot(
+      duree_peche,
+      main = i.reg,
+      xlim = c(1985, 2025),
+      ylim = c(0, max(duree_peche[, 2]))
+    )
+    temp2 <- aggregate(
+      x = temp$pd_deb,
+      by = temp['annee'],
+      FUN = sum,
+      na.rm = TRUE
+    )
+    lines(temp2[, 1], temp2[, 2] / max(temp2[, 2]) * max(duree_peche[, 2]))
+  }
+
+  par(mfrow = c(2, 2))
+  for (i.reg in sort(unique(zp.init$region))) {
+    temp <- zp.init[zp.init$region == i.reg, ]
+    duree_mouil <- aggregate(
+      x = temp$jr_mouil,
+      by = temp['annee'],
+      FUN = median,
+      na.rm = TRUE
+    )
+    plot(
+      duree_mouil,
+      main = i.reg,
+      xlim = c(1985, 2025),
+      ylim = c(0, max(duree_mouil[, 2]))
+    )
+    temp2 <- aggregate(
+      x = temp$pd_deb,
+      by = temp['annee'],
+      FUN = sum,
+      na.rm = TRUE
+    )
+    lines(temp2[, 1], temp2[, 2] / max(temp2[, 2]) * max(duree_mouil[, 2]))
+  }
+
+  par(mfrow = c(2, 2))
+  for (i.reg in sort(unique(zp.init$region))) {
+    temp <- zp.init[zp.init$region == i.reg, ]
+    duree_eff <- aggregate(
+      x = temp$eff_hre,
+      by = temp['annee'],
+      FUN = median,
+      na.rm = TRUE
+    )
+    plot(
+      duree_eff,
+      main = i.reg,
+      xlim = c(1985, 2025),
+      ylim = c(0, max(duree_eff[, 2], na.rm = TRUE))
+    )
+    temp2 <- aggregate(
+      x = temp$pd_deb,
+      by = temp['annee'],
+      FUN = sum,
+      na.rm = TRUE
+    )
+    lines(
+      temp2[, 1],
+      temp2[, 2] / max(temp2[, 2]) * max(duree_eff[, 2], na.rm = TRUE)
+    )
+  }
 
   par(mfrow = c(2, 2))
   temp <- subset(zp.init, annee >= 1998)
