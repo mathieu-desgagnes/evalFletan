@@ -16,7 +16,7 @@
 #' @return une liste des indicateurs utilisés
 #'
 graph_validation_mission <- function(donnee) {
-  donnee$carbio$longueur_fourche_frais_fourche_frais <- donnee$carbio$longueur_fourche_frais_fourche_frais /
+  donnee$carbio$longueur_fourche_frais <- donnee$carbio$longueur_fourche_frais /
     10
   donnee$carbio$poids_total_frais <- donnee$carbio$poids_total_frais / 1000
   ## loader les données relevé MPO NGSL
@@ -31,10 +31,12 @@ graph_validation_mission <- function(donnee) {
   ##
   ## validation 1, est-ce que l2m(carbio$longueur_fourche_frais) = carbio$poids_total_frais ------ semble ok, meme si certains, mettons, surprenants!
   donnee$carbio$poidsTotEstime <- exp(-12.212072) *
-    (donnee$carbio$longueur_fourche_frais_fourche_frais)^3.180181
+    (donnee$carbio$longueur_fourche_frais)^3.180181
   donnee$carbio$longEstime <- (donnee$carbio$poids_total_frais /
     exp(-12.212072))^(1 / 3.180181)
-  par(mfrow = c(1, 2))
+  # (11.94 /
+  #     exp(-12.212072))^(1 / 3.180181)
+  # par(mfrow = c(1, 2))
   ##
   ## comparaison du poids estimé par rapport au poids attendu,
   ##
@@ -50,7 +52,7 @@ graph_validation_mission <- function(donnee) {
   ##        pch=c(1,NA), lty=c(NA,2), col=c('black','red'))
   ##
   plot(
-    donnee$carbio$longueur_fourche_frais_fourche_frais,
+    donnee$carbio$longueur_fourche_frais,
     donnee$carbio$poids_total_frais /
       donnee$carbio$poidsTotEstime,
     main = paste(
@@ -88,7 +90,7 @@ graph_validation_mission <- function(donnee) {
   legend(
     'topright',
     inset = 0.03,
-    legend = c(paste('Données', prefixe), '-25% et +25%'),
+    legend = paste('Données', '-25% et +25%'),
     pch = c(1, NA),
     lty = c(NA, 2),
     col = c('black', 'red')
@@ -134,17 +136,17 @@ graph_validation_mission <- function(donnee) {
       'sexe'
     ]]
   )
-  text(
-    donnee$carbio[lesquels, 'poidsTot'],
-    donnee$carbio[lesquels, 'poidsTotEstime'],
-    donnee$carbio[lesquels, 'no_station'],
-    pos = 3,
-    cex = 0.5
-  )
+  # text(
+  #   donnee$carbio[lesquels, 'poidsTot'],
+  #   donnee$carbio[lesquels, 'poidsTotEstime'],
+  #   donnee$carbio[lesquels, 'no_station'],
+  #   pos = 3,
+  #   cex = 0.5
+  # )
   legend(
     'bottomright',
     inset = 0.03,
-    legend = c(paste('Données', prefixe), '-25% et +25%'),
+    legend = c('Données', '-25% et +25%'),
     pch = c(1, NA),
     lty = c(NA, 2),
     col = c('black', 'red')
@@ -157,7 +159,7 @@ graph_validation_mission <- function(donnee) {
   ##
   ## 2) que sum(carbio$poidsTot) = catch$pds_echant_categ ------------- reste un peu incertain, mais les données dans "catch" semblent ok
   poidsParStation <- aggregate(
-    donnee$carbio$poidsTot,
+    donnee$carbio$poids_total_frais,
     donnee$carbio[c('no_station')],
     FUN = sum,
     na.rm = TRUE
@@ -227,7 +229,7 @@ graph_validation_mission <- function(donnee) {
   ##
   ##
   ##
-  ## 3) que length(carbio$longueur_fourche_frais_fourche_frais) = catch$nb_echant_categ
+  ## 3) que length(carbio$longueur_fourche_frais) = catch$nb_echant_categ
   nbParStation <- aggregate(
     donnee$carbio$longueur_fourche_frais,
     donnee$carbio[c('no_station')],
@@ -236,21 +238,21 @@ graph_validation_mission <- function(donnee) {
   ##
   ##
   ## 4) que catch$nbcatch >= catch$nb_echant_categ
-  plot(
-    donnee$catch[, c('nbcatch', 'nb_echant_categ')],
-    main = 'catch',
-    xlab = 'Nombre catchuré',
-    ylab = 'Nombre échantillonné'
-  )
-  abline(a = 0, b = 1)
-  lesquels <- which(
-    apply(donnee$catch[, c('nbcatch', 'nb_echant_categ')], 1, diff) != 0 |
-      is.na(apply(
-        donnee$catch[, c('nbcatch', 'nb_echant_categ')],
-        1,
-        diff
-      ))
-  )
+  # plot(
+  #   donnee$catch[, c('nb_ind', 'nb_echant_categ')],
+  #   main = 'catch',
+  #   xlab = 'Nombre catchuré',
+  #   ylab = 'Nombre échantillonné'
+  # )
+  # abline(a = 0, b = 1)
+  # lesquels <- which(
+  #   apply(donnee$catch[, c('nbcatch', 'nb_echant_categ')], 1, diff) != 0 |
+  #     is.na(apply(
+  #       donnee$catch[, c('nbcatch', 'nb_echant_categ')],
+  #       1,
+  #       diff
+  #     ))
+  # )
   ## donnee$catch[lesquels,]
   ##
   x <- hist(

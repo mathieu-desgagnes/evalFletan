@@ -20,7 +20,7 @@ valider_dernier_releve <- function() {
     pwd = Sys.getenv("MOT_DE_PASSE_BD")
   )
   PSEtoDataframe::source_info_list()
-  no_source <- 35
+  no_source <- 38
   no_releve_dernier <- max(PSEtoDataframe::no_releve_list(no_source)$NO_RELEVE)
   data <- PSEtoDataframe::pse_to_dataframe(
     source_info = no_source,
@@ -39,10 +39,8 @@ valider_dernier_releve <- function() {
     width = 14,
     height = 8.5
   )
-  temp <- validerMission(
-    prefixe = nomDuReleveAValider,
-    dirInput = file.path(origine, 'input', annee.courante, 'releve'),
-    dirOutput = file.path(origine, 'input', annee.validation, 'releve')
+  temp <- graph_validation_mission(
+    donnee = data
   )
   dev.off()
 }
