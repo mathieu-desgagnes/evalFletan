@@ -16,6 +16,7 @@ prep_donnees <- function(dir_sauvegarde_locale) {
   ## débarquements
   ## gestion des pêches
   ## ziff
+  temp <- calculer_deb_ziff(ziff)
   ## opano
 
   ## relevés au chalut MPO
