@@ -1,4 +1,4 @@
-#' Selectionne les données ziff utilisables pour le calcul de l'effort
+#' Selectionne les données ziff utilisables pour le calcul de l'effort dans la pêche au flétan
 #'
 #' Des sorties graphiques et des diagnostiques des données disponibles sont aussi codés dans la fonction, mais doivent encore être valorisés.
 #'
